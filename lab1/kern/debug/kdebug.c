@@ -302,5 +302,18 @@ print_stackframe(void) {
       *           NOTICE: the calling funciton's return addr eip  = ss:[ebp+4]
       *                   the calling funciton's ebp = ss:[ebp]
       */
+    uint32_t ebp = read_ebp();  //取得当前ebp的值
+    uint32_t eip = read_eip();  //取得eip
+    int i, j;
+    for(i = 0; ebp != 0 && i < STACKFRAME_DEPTH; i++){  //ebp为0（初始值）说明没有函数运行
+        cprintf("ebp: 0x%08x, eip: 0x%08x, args: ", ebp, eip);
+        uint32_t * args = (uint32_t *) ebp + 2; //参数1的地址
+        for(j = 0; j < 4; j++)
+            cprintf("0x%08x ", args[j]);
+        cprintf("\n");
+        print_debuginfo(eip - 1);   //打印debug信息
+        eip = ((uint32_t *)ebp)[1];
+        ebp = ((uint32_t *)ebp)[0];
+    }
 }
 
