@@ -116,7 +116,7 @@ default_init_memmap(struct Page *base, size_t n) {
     base->property = n;
     SetPageProperty(base);
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    list_add_before(&free_list, &(base->page_link));
 }
 
 static struct Page *
@@ -127,22 +127,23 @@ default_alloc_pages(size_t n) {
     }
     struct Page *page = NULL;
     list_entry_t *le = &free_list;
-    while ((le = list_next(le)) != &free_list) {
+    while ((le = list_next(le)) != &free_list) {//找到合适的空闲块
         struct Page *p = le2page(le, page_link);
         if (p->property >= n) {
             page = p;
             break;
         }
     }
-    if (page != NULL) {
-        list_del(&(page->page_link));
-        if (page->property > n) {
+    if (page != NULL) {//分配
+        if (page->property > n) {//空闲块比需要的大
             struct Page *p = page + n;
             p->property = page->property - n;
-            list_add(&free_list, &(p->page_link));
-    }
+            list_add_after(&(page->page_link), &(p->page_link));
+            SetPageProperty(p);
+        }
+        list_del(&(page->page_link));
         nr_free -= n;
-        ClearPageProperty(page);
+        ClearPageProperty(page);//设为已占用
     }
     return page;
 }
@@ -156,6 +157,32 @@ default_free_pages(struct Page *base, size_t n) {
         p->flags = 0;
         set_page_ref(p, 0);
     }
+    // SetPageProperty(base);//设为空闲页
+    // base->property = n;
+    // list_entry_t *le = &free_list;
+    // while((le = list_next(le)) != &free_list){
+    //     struct Page *page = le2page(le, page_link);
+    //     if(base + base->property == page){//与右侧空闲块相邻，向右合并
+    //         ClearPageProperty(page);
+    //         base->property += page->property;
+    //         list_del(le);
+    //     }
+    //     if(base == page + page->property){//与左侧空闲块相邻，向左合并
+    //         ClearPageProperty(base);
+    //         page->property += base->property;
+    //         base = page;
+    //         list_del(le);
+    //     }
+    // }
+    // le = &free_list;
+    // while((le = list_next(le)) != &free_list){//查找插入位置
+    //     struct Page *page = le2page(le, page_link);
+    //     if(base + base->property < page)
+    //         break;
+    // }
+    // list_add_before(le, &(base->page_link));
+    // nr_free += n;
+
     base->property = n;
     SetPageProperty(base);
     list_entry_t *le = list_next(&free_list);
@@ -175,7 +202,16 @@ default_free_pages(struct Page *base, size_t n) {
         }
     }
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    le = list_next(&free_list);
+    while (le != &free_list) {
+        p = le2page(le, page_link);
+        if (base + base->property <= p) {
+            assert(base + base->property != p);
+            break;
+        }
+        le = list_next(le);
+    }
+    list_add_before(le, &(base->page_link));
 }
 
 static size_t
@@ -240,7 +276,7 @@ static void
 default_check(void) {
     int count = 0, total = 0;
     list_entry_t *le = &free_list;
-    while ((le = list_next(le)) != &free_list) {
+    while ((le = list_next(le)) != &free_list) {//检查空闲页总数
         struct Page *p = le2page(le, page_link);
         assert(PageProperty(p));
         count ++, total += p->property;
@@ -252,7 +288,6 @@ default_check(void) {
     struct Page *p0 = alloc_pages(5), *p1, *p2;
     assert(p0 != NULL);
     assert(!PageProperty(p0));
-
     list_entry_t free_list_store = free_list;
     list_init(&free_list);
     assert(list_empty(&free_list));
@@ -308,4 +343,3 @@ const struct pmm_manager default_pmm_manager = {
     .nr_free_pages = default_nr_free_pages,
     .check = default_check,
 };
-

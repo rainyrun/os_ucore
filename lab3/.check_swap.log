@@ -1,0 +1,324 @@
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0xc0100036 (phys)
+  etext  0xc0108db0 (phys)
+  edata  0xc0123000 (phys)
+  end    0xc0124130 (phys)
+Kernel executable memory footprint: 145KB
+ebp: 0xc011ff38, eip: 0xc01009eb, args: 0x00010094 0x00000000 0xc011ff68 0xc01000d7 
+    kern/debug/kdebug.c:309: print_stackframe+21
+ebp: 0xc011ff48, eip: 0xc0100cda, args: 0x00000000 0x00000000 0x00000000 0xc011ffb8 
+    kern/debug/kmonitor.c:129: mon_backtrace+10
+ebp: 0xc011ff68, eip: 0xc01000d7, args: 0x00000000 0xc011ff90 0xffff0000 0xc011ff94 
+    kern/init/init.c:55: grade_backtrace2+33
+ebp: 0xc011ff88, eip: 0xc0100100, args: 0x00000000 0xffff0000 0xc011ffb4 0x0000002a 
+    kern/init/init.c:60: grade_backtrace1+38
+ebp: 0xc011ffa8, eip: 0xc010011e, args: 0x00000000 0xc0100036 0xffff0000 0x0000001d 
+    kern/init/init.c:65: grade_backtrace0+23
+ebp: 0xc011ffc8, eip: 0xc0100143, args: 0xc0108ddc 0xc0108dc0 0x00001130 0x00000000 
+    kern/init/init.c:70: grade_backtrace+34
+ebp: 0xc011fff8, eip: 0xc010008b, args: 0xc0108f74 0xc0108f7c 0xc0100c60 0xc0108f9b 
+    kern/init/init.c:32: kern_init+84
+memory management: default_pmm_manager
+e820map:
+  memory: 0009fc00, [00000000, 0009fbff], type = 1.
+  memory: 00000400, [0009fc00, 0009ffff], type = 2.
+  memory: 00010000, [000f0000, 000fffff], type = 2.
+  memory: 07efe000, [00100000, 07ffdfff], type = 1.
+  memory: 00002000, [07ffe000, 07ffffff], type = 2.
+  memory: 00040000, [fffc0000, ffffffff], type = 2.
+check_alloc_page() succeeded!
+check_pgdir() succeeded!
+check_boot_pgdir() succeeded!
+-------------------- BEGIN --------------------
+PDE(0e0) c0000000-f8000000 38000000 urw
+  |-- PTE(38000) c0000000-f8000000 38000000 -rw
+PDE(001) fac00000-fb000000 00400000 -rw
+  |-- PTE(000e0) faf00000-fafe0000 000e0000 urw
+  |-- PTE(00001) fafeb000-fafec000 00001000 -rw
+--------------------- END ---------------------
+pmm_manager is 73642020
+page fault at 0x0a782520: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0x00008e08: K/R [no page found].
+page fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0xpage fault at 0

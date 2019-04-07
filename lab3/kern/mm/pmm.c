@@ -296,7 +296,6 @@ pmm_init(void) {
     //Then pmm can alloc/free the physical memory. 
     //Now the first_fit/best_fit/worst_fit/buddy_system pmm are available.
     init_pmm_manager();
-
     // detect physical memory space, reserve already used memory,
     // then use pmm->init_memmap to create free page list
     page_init();
@@ -327,7 +326,6 @@ pmm_init(void) {
     check_boot_pgdir();
 
     print_pgdir();
-
 }
 
 //get_pte - get pte and return the kernel virtual address of this pte for la
@@ -372,6 +370,18 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+  pde_t *pdep = &pgdir[PDX(la)];  //pdep指向对应的pde
+    if(!(*pdep & PTE_P)){    //pde不存在
+        struct Page *page;
+        if(create == 0 || (page = alloc_page()) == NULL){
+            return NULL;
+        }
+        set_page_ref(page, 1);
+        uintptr_t pa = page2pa(page);
+        memset(KADDR(pa), 0 ,PGSIZE);//将PT初始化为全0
+        pgdir[PDX(la)] = pa | PTE_P | PTE_W | PTE_U;//填充pde的内容
+    }
+    return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];//PDE_ADDR(*pdep) = pa
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -417,6 +427,14 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+  if(*ptep & PTE_P){
+        // struct Page *page = pte2page(*ptep);
+        struct Page *page = get_page(pgdir, la, NULL);  //取得la对应的页
+        if(page_ref_dec(page) == 0)
+            free_page(page);
+        *ptep = 0;  //清除pte内容
+        tlb_invalidate(pgdir, la);
+    }
 }
 
 //page_remove - free an Page which is related linear address la and has an validated pte
@@ -442,7 +460,7 @@ page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
     if (ptep == NULL) {
         return -E_NO_MEM;
     }
-    page_ref_inc(page);
+    page_ref_inc(page);//增加页面的引用值
     if (*ptep & PTE_P) {
         struct Page *p = pte2page(*ptep);
         if (p == page) {
@@ -653,11 +671,11 @@ kmalloc(size_t n) {
 }
 
 void 
-kfree(void *ptr, size_t n) {
+kfree(void *ptr, size_t n) {//释放从ptr开始的共n个字节
     assert(n > 0 && n < 1024*0124);
     assert(ptr != NULL);
     struct Page *base=NULL;
-    int num_pages=(n+PGSIZE-1)/PGSIZE;
+    int num_pages=(n+PGSIZE-1)/PGSIZE;//占用的页面数，num_pages >= 1(vma_struct至少占一页，不足一页按一页算)
     base = kva2page(ptr);
     free_pages(base, num_pages);
 }

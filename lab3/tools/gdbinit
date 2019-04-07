@@ -1,3 +1,9 @@
 file bin/kernel
 target remote :1234
-break kern_init
+break vmm_init
+break find_vma
+break check_vmm
+break check_vma_struct
+break check_pgfault
+break nr_free_pages
+break default_nr_free_pages

@@ -9,10 +9,10 @@
 void
 swapfs_init(void) {
     static_assert((PGSIZE % SECTSIZE) == 0);
-    if (!ide_device_valid(SWAP_DEV_NO)) {
+    if (!ide_device_valid(SWAP_DEV_NO)) {//检查用于交换的磁盘是否有效
         panic("swap fs isn't available.\n");
     }
-    max_swap_offset = ide_device_size(SWAP_DEV_NO) / (PGSIZE / SECTSIZE);
+    max_swap_offset = ide_device_size(SWAP_DEV_NO) / (PGSIZE / SECTSIZE);//共能存储max_swap_offset页
 }
 
 int

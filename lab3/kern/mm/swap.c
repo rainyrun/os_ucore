@@ -30,7 +30,7 @@ static void check_swap(void);
 int
 swap_init(void)
 {
-     swapfs_init();
+     swapfs_init();//检查磁盘有效性，设置max_swap_offset
 
      if (!(1024 <= max_swap_offset && max_swap_offset < MAX_SWAP_OFFSET_LIMIT))
      {
@@ -38,10 +38,10 @@ swap_init(void)
      }
      
 
-     sm = &swap_manager_fifo;
+     sm = &swap_manager_fifo;//采用FIFO页面替换算法
      int r = sm->init();
      
-     if (r == 0)
+     if (r == 0)//初始化完成
      {
           swap_init_ok = 1;
           cprintf("SWAP: manager = %s\n", sm->name);
@@ -126,7 +126,7 @@ swap_in(struct mm_struct *mm, uintptr_t addr, struct Page **ptr_result)
      // cprintf("SWAP: load ptep %x swap entry %d to vaddr 0x%08x, page %x, No %d\n", ptep, (*ptep)>>8, addr, result, (result-pages));
     
      int r;
-     if ((r = swapfs_read((*ptep), result)) != 0)
+     if ((r = swapfs_read((*ptep), result)) != 0)//将*ptep(内容为swap_entry)中指示的磁盘位置中的内容，读入page
      {
         assert(r!=0);
      }
@@ -140,9 +140,9 @@ swap_in(struct mm_struct *mm, uintptr_t addr, struct Page **ptr_result)
 static inline void
 check_content_set(void)
 {
-     *(unsigned char *)0x1000 = 0x0a;
+     *(unsigned char *)0x1000 = 0x0a;//在0x1000处，存储0x0a，因0x1000没有与内存页映射，产生14号页异常中断
      assert(pgfault_num==1);
-     *(unsigned char *)0x1010 = 0x0a;
+     *(unsigned char *)0x1010 = 0x0a;//已有映射，直接写入
      assert(pgfault_num==1);
      *(unsigned char *)0x2000 = 0x0b;
      assert(pgfault_num==2);
@@ -180,7 +180,7 @@ check_swap(void)
     //backup mem env
      int ret, count = 0, total = 0, i;
      list_entry_t *le = &free_list;
-     while ((le = list_next(le)) != &free_list) {
+     while ((le = list_next(le)) != &free_list) {//检查空闲块个数、空闲页总数
         struct Page *p = le2page(le, page_link);
         assert(PageProperty(p));
         count ++, total += p->property;
@@ -192,7 +192,7 @@ check_swap(void)
      struct mm_struct *mm = mm_create();
      assert(mm != NULL);
 
-     extern struct mm_struct *check_mm_struct;
+     extern struct mm_struct *check_mm_struct;//vmm.c中，被check_pgfault函数使用
      assert(check_mm_struct == NULL);
 
      check_mm_struct = mm;
@@ -203,16 +203,16 @@ check_swap(void)
      struct vma_struct *vma = vma_create(BEING_CHECK_VALID_VADDR, CHECK_VALID_VADDR, VM_WRITE | VM_READ);
      assert(vma != NULL);
 
-     insert_vma_struct(mm, vma);
+     insert_vma_struct(mm, vma);//vma虚拟地址空间为[0x1000, 0x6000]
 
-     //setup the temp Page Table vaddr 0~4MB
+     //setup the temp Page Table vaddr 0~4MB( [0x0, 0x400000] )
      cprintf("setup Page Table for vaddr 0X1000, so alloc a page\n");
      pte_t *temp_ptep=NULL;
      temp_ptep = get_pte(mm->pgdir, BEING_CHECK_VALID_VADDR, 1);
      assert(temp_ptep!= NULL);
      cprintf("setup Page Table vaddr 0~4MB OVER!\n");
      
-     for (i=0;i<CHECK_VALID_PHY_PAGE_NUM;i++) {
+     for (i=0;i<CHECK_VALID_PHY_PAGE_NUM;i++) {//物理地址空间为4页（虚拟地址空间为5页）
           check_rp[i] = alloc_page();
           assert(check_rp[i] != NULL );
           assert(!PageProperty(check_rp[i]));
@@ -224,7 +224,7 @@ check_swap(void)
      //assert(alloc_page() == NULL);
      
      unsigned int nr_free_store = nr_free;
-     nr_free = 0;
+     nr_free = 0;//空闲块链表已清空
      for (i=0;i<CHECK_VALID_PHY_PAGE_NUM;i++) {
         free_pages(check_rp[i],1);
      }
@@ -234,16 +234,16 @@ check_swap(void)
      //setup initial vir_page<->phy_page environment for page relpacement algorithm 
 
      
-     pgfault_num=0;
+     pgfault_num=0;//页异常发生次数
      
-     check_content_set();
+     check_content_set();//在4个内存页中写入内容
      assert( nr_free == 0);         
      for(i = 0; i<MAX_SEQ_NO ; i++) 
          swap_out_seq_no[i]=swap_in_seq_no[i]=-1;
      
      for (i= 0;i<CHECK_VALID_PHY_PAGE_NUM;i++) {
          check_ptep[i]=0;
-         check_ptep[i] = get_pte(pgdir, (i+1)*0x1000, 0);
+         check_ptep[i] = get_pte(pgdir, (i+1)*0x1000, 0);//[0x1000, 0x5000]对应的pte存储在check_ptep[0, 3]
          //cprintf("i %d, check_ptep addr %x, value %x\n", i, check_ptep[i], *check_ptep[i]);
          assert(check_ptep[i] != NULL);
          assert(pte2page(*check_ptep[i]) == check_rp[i]);
@@ -251,7 +251,7 @@ check_swap(void)
      }
      cprintf("set up init env for check_swap over!\n");
      // now access the virt pages to test  page relpacement algorithm 
-     ret=check_content_access();
+     ret=check_content_access();//检查页替换算法
      assert(ret==0);
      
      //restore kernel mem env
@@ -260,7 +260,7 @@ check_swap(void)
      } 
 
      //free_page(pte2page(*temp_ptep));
-     
+     //恢复测试前的环境
      mm_destroy(mm);
          
      nr_free = nr_free_store;
