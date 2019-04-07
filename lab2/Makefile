@@ -8,15 +8,15 @@ V       := @
 #USELLVM := 1
 # try to infer the correct GCCPREFX
 ifndef GCCPREFIX
-GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
-	then echo 'i386-elf-'; \
+GCCPREFIX := $(shell if i386-ucore-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
+	then echo 'i386-ucore-elf-'; \
 	elif objdump -i 2>&1 | grep 'elf32-i386' >/dev/null 2>&1; \
 	then echo ''; \
 	else echo "***" 1>&2; \
-	echo "*** Error: Couldn't find an i386-elf version of GCC/binutils." 1>&2; \
-	echo "*** Is the directory with i386-elf-gcc in your PATH?" 1>&2; \
-	echo "*** If your i386-elf toolchain is installed with a command" 1>&2; \
-	echo "*** prefix other than 'i386-elf-', set your GCCPREFIX" 1>&2; \
+	echo "*** Error: Couldn't find an i386-ucore-elf version of GCC/binutils." 1>&2; \
+	echo "*** Is the directory with i386-ucore-elf-gcc in your PATH?" 1>&2; \
+	echo "*** If your i386-ucore-elf toolchain is installed with a command" 1>&2; \
+	echo "*** prefix other than 'i386-ucore-elf-', set your GCCPREFIX" 1>&2; \
 	echo "*** environment variable to that prefix and run 'make' again." 1>&2; \
 	echo "*** To turn off this error, run 'gmake GCCPREFIX= ...'." 1>&2; \
 	echo "***" 1>&2; exit 1; fi)
@@ -48,13 +48,13 @@ ifndef  USELLVM
 HOSTCC		:= gcc
 HOSTCFLAGS	:= -g -Wall -O2
 CC		:= $(GCCPREFIX)gcc
-CFLAGS	:= -march=i686 -fno-builtin -fno-PIC -Wall -ggdb -m32 -gstabs -nostdinc $(DEFS)
+CFLAGS	:= -fno-builtin -Wall -ggdb -m32 -gstabs -nostdinc $(DEFS)
 CFLAGS	+= $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 else
 HOSTCC		:= clang
 HOSTCFLAGS	:= -g -Wall -O2
 CC		:= clang
-CFLAGS	:= -march=i686 -fno-builtin -fno-PIC -Wall -g -m32 -nostdinc $(DEFS)
+CFLAGS	:= -fno-builtin -Wall -g -m32 -mno-sse -nostdinc $(DEFS)
 CFLAGS	+= $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 endif
 

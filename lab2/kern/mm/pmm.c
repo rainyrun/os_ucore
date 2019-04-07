@@ -189,39 +189,39 @@ nr_free_pages(void) {
 /* pmm_init - initialize the physical memory management */
 static void
 page_init(void) {
-    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
-    uint64_t maxpa = 0;
+    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);//内存分布的探测结果，存储在0x8000内
+    uint64_t maxpa = 0; //最高物理内存地址
 
     cprintf("e820map:\n");
     int i;
-    for (i = 0; i < memmap->nr_map; i ++) {
+    for (i = 0; i < memmap->nr_map; i ++) {//打印内存探测结果
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
         cprintf("  memory: %08llx, [%08llx, %08llx], type = %d.\n",
-                memmap->map[i].size, begin, end - 1, memmap->map[i].type);
+                memmap->map[i].size, begin, end - 1, memmap->map[i].type);//%llx输出64位16进制数
         if (memmap->map[i].type == E820_ARM) {
             if (maxpa < end && begin < KMEMSIZE) {
                 maxpa = end;
             }
         }
     }
-    if (maxpa > KMEMSIZE) {
+    if (maxpa > KMEMSIZE) {//maxpa限制在KMEMSIZE内
         maxpa = KMEMSIZE;
     }
 
     extern char end[];
 
-    npage = maxpa / PGSIZE;
-    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
+    npage = maxpa / PGSIZE;//物理内存对应的总页数
+    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);//end：ucore的结束地址，ucore结束后就是pages数据结构
 
-    for (i = 0; i < npage; i ++) {
+    for (i = 0; i < npage; i ++) {//初始化，所有内存页设为reserved
         SetPageReserved(pages + i);
     }
 
-    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
+    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);//空闲内存的起始物理地址
 
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
-        if (memmap->map[i].type == E820_ARM) {
+        if (memmap->map[i].type == E820_ARM) {//空闲内存，begin，end指向物理地址
             if (begin < freemem) {
                 begin = freemem;
             }
@@ -231,7 +231,7 @@ page_init(void) {
             if (begin < end) {
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
-                if (begin < end) {
+                if (begin < end) {//空闲内存大小 > 1页
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
             }
@@ -247,11 +247,11 @@ page_init(void) {
 //  perm: permission of this memory  
 static void
 boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, uintptr_t pa, uint32_t perm) {
-    assert(PGOFF(la) == PGOFF(pa));
-    size_t n = ROUNDUP(size + PGOFF(la), PGSIZE) / PGSIZE;
-    la = ROUNDDOWN(la, PGSIZE);
+    assert(PGOFF(la) == PGOFF(pa));//la和pa的页内偏移相同
+    size_t n = ROUNDUP(size + PGOFF(la), PGSIZE) / PGSIZE;//需要映射的总页数
+    la = ROUNDDOWN(la, PGSIZE);//la所在页起始地址
     pa = ROUNDDOWN(pa, PGSIZE);
-    for (; n > 0; n --, la += PGSIZE, pa += PGSIZE) {
+    for (; n > 0; n --, la += PGSIZE, pa += PGSIZE) {//一页一页映射
         pte_t *ptep = get_pte(pgdir, la, 1);
         assert(ptep != NULL);
         *ptep = pa | PTE_P | perm;
@@ -282,7 +282,7 @@ pmm_init(void) {
     //First we should init a physical memory manager(pmm) based on the framework.
     //Then pmm can alloc/free the physical memory. 
     //Now the first_fit/best_fit/worst_fit/buddy_system pmm are available.
-    init_pmm_manager();
+    init_pmm_manager();//建一个空的块管理列表
 
     // detect physical memory space, reserve already used memory,
     // then use pmm->init_memmap to create free page list
@@ -297,17 +297,17 @@ pmm_init(void) {
 
     // recursively insert boot_pgdir in itself
     // to form a virtual page table at virtual address VPT
-    boot_pgdir[PDX(VPT)] = PADDR(boot_pgdir) | PTE_P | PTE_W;
+    boot_pgdir[PDX(VPT)] = PADDR(boot_pgdir) | PTE_P | PTE_W;//VPT <--> boot_pgdir ?
 
     // map all physical memory to linear memory with base linear addr KERNBASE
     // linear_addr KERNBASE ~ KERNBASE + KMEMSIZE = phy_addr 0 ~ KMEMSIZE
-    boot_map_segment(boot_pgdir, KERNBASE, KMEMSIZE, 0, PTE_W);
+    boot_map_segment(boot_pgdir, KERNBASE, KMEMSIZE, 0, PTE_W);//[KERNBASE, KERNBASE + KMEMSIZE](la) <--> [0, KMEMSIZE](pa)
 
     // Since we are using bootloader's GDT,
     // we should reload gdt (second time, the last time) to get user segments and the TSS
     // map virtual_addr 0 ~ 4G = linear_addr 0 ~ 4G
     // then set kernel stack (ss:esp) in TSS, setup TSS in gdt, load TSS
-    gdt_init();
+    gdt_init();//段映射，对等映射
 
     //now the basic virtual memory map(see memalyout.h) is established.
     //check the correctness of the basic virtual memory map.
@@ -359,6 +359,18 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+    pde_t *pdep = &pgdir[PDX(la)];  //pdep指向对应的pde
+    if(!(*pdep & PTE_P)){    //pde不存在
+        struct Page *page;
+        if(create == 0 || (page = alloc_page()) == NULL){
+            return NULL;
+        }
+        set_page_ref(page, 1);
+        uintptr_t pa = page2pa(page);
+        memset(KADDR(pa), 0 ,PGSIZE);//将PT初始化为全0
+        pgdir[PDX(la)] = pa | PTE_P | PTE_W | PTE_U;//填充pde的内容
+    }
+    return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];//PDE_ADDR(*pdep) = pa
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -404,6 +416,14 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+    if(*ptep & PTE_P){
+        // struct Page *page = pte2page(*ptep);
+        struct Page *page = get_page(pgdir, la, NULL);  //取得la对应的页
+        if(page_ref_dec(page) == 0)
+            free_page(page);
+        *ptep = 0;  //清除pte内容
+        tlb_invalidate(pgdir, la);
+    }
 }
 
 //page_remove - free an Page which is related linear address la and has an validated pte
@@ -430,17 +450,17 @@ page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
         return -E_NO_MEM;
     }
     page_ref_inc(page);
-    if (*ptep & PTE_P) {
+    if (*ptep & PTE_P) {//pte存在
         struct Page *p = pte2page(*ptep);
-        if (p == page) {
+        if (p == page) {//映射关系已存在
             page_ref_dec(page);
         }
-        else {
+        else {//取消映射关系
             page_remove_pte(pgdir, la, ptep);
         }
     }
-    *ptep = page2pa(page) | PTE_P | perm;
-    tlb_invalidate(pgdir, la);
+    *ptep = page2pa(page) | PTE_P | perm;//添加映射
+    tlb_invalidate(pgdir, la);//tlb中对应的缓冲置为不可用
     return 0;
 }
 
@@ -459,33 +479,51 @@ check_alloc_page(void) {
     cprintf("check_alloc_page() succeeded!\n");
 }
 
+void
+print_pgdir_me(pde_t *pgdir){
+    int i, j;
+    for (i = 0; i < 1024; ++i){//打印页表中的内容
+        if(boot_pgdir[i] != 0){
+            cprintf("boot_pgdir[%d] is : %08x\n", i, boot_pgdir[i]);//打印页目录项
+            pte_t * pte = KADDR(PDE_ADDR(boot_pgdir[i]));
+            for (j = 0; j < 1024; ++j){
+                if(pte[j] != 0)
+                    cprintf("\tboot_pgdir[%d][%d] is : %08x\n", i, j, pte[j]);//打印页表项
+            }
+        }
+    }
+}
+
 static void
 check_pgdir(void) {
     assert(npage <= KMEMSIZE / PGSIZE);
-    assert(boot_pgdir != NULL && (uint32_t)PGOFF(boot_pgdir) == 0);
-    assert(get_page(boot_pgdir, 0x0, NULL) == NULL);
+    // print_pgdir_me(boot_pgdir);
+    cprintf("boot_pgdir is %08x\n", boot_pgdir);
+    assert(boot_pgdir != NULL && (uint32_t)PGOFF(boot_pgdir) == 0);//页目录表存在 && 从某页开始
+    assert(get_page(boot_pgdir, 0x0, NULL) == NULL);//0x0对应的页（0x0--0xC0000000-1)都未映射
 
     struct Page *p1, *p2;
     p1 = alloc_page();
-    assert(page_insert(boot_pgdir, p1, 0x0, 0) == 0);
+    assert(page_insert(boot_pgdir, p1, 0x0, 0) == 0);//0x0(la) <--> p1
 
     pte_t *ptep;
     assert((ptep = get_pte(boot_pgdir, 0x0, 0)) != NULL);
     assert(pte2page(*ptep) == p1);
     assert(page_ref(p1) == 1);
 
-    ptep = &((pte_t *)KADDR(PDE_ADDR(boot_pgdir[0])))[1];
-    assert(get_pte(boot_pgdir, PGSIZE, 0) == ptep);
+    ptep = &((pte_t *)KADDR(PDE_ADDR(boot_pgdir[0])))[1];//0x00001000(la)对应的pte
+    cprintf("pte = %08x\n", *ptep);
+    assert(get_pte(boot_pgdir, PGSIZE, 0) == ptep);//PGSIZE = 0x00001000
 
     p2 = alloc_page();
-    assert(page_insert(boot_pgdir, p2, PGSIZE, PTE_U | PTE_W) == 0);
+    assert(page_insert(boot_pgdir, p2, PGSIZE, PTE_U | PTE_W) == 0);//PGSIZE(la) <--> p2
     assert((ptep = get_pte(boot_pgdir, PGSIZE, 0)) != NULL);
-    assert(*ptep & PTE_U);
+    assert(*ptep & PTE_U);//检验属性是否设置正确
     assert(*ptep & PTE_W);
     assert(boot_pgdir[0] & PTE_U);
     assert(page_ref(p2) == 1);
 
-    assert(page_insert(boot_pgdir, p1, PGSIZE, 0) == 0);
+    assert(page_insert(boot_pgdir, p1, PGSIZE, 0) == 0);//PGSIZE(la) <--> p1
     assert(page_ref(p1) == 2);
     assert(page_ref(p2) == 0);
     assert((ptep = get_pte(boot_pgdir, PGSIZE, 0)) != NULL);

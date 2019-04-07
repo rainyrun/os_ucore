@@ -16,8 +16,8 @@ static void lab1_switch_test(void);
 
 int
 kern_init(void) {
-    extern char edata[], end[];
-    memset(edata, 0, end - edata);
+    extern char edata[], end[];//edata:数据段的结束地址，end：bss段的结束地址
+    memset(edata, 0, end - edata);//将从edata开始的end-edata个字节设置为0
 
     cons_init();                // init the console
 

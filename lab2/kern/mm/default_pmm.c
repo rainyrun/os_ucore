@@ -103,22 +103,22 @@ default_init(void) {
     list_init(&free_list);
     nr_free = 0;
 }
-
+//将探测到的空闲物理内存块（从base开始的n个页）设置为空闲块，插入空闲块链表中
 static void
 default_init_memmap(struct Page *base, size_t n) {
     assert(n > 0);
     struct Page *p = base;
     for (; p != base + n; p ++) {
-        assert(PageReserved(p));
-        p->flags = p->property = 0;
+        assert(PageReserved(p));    //空闲页初始化时，均设置为已保留页
+        p->flags = p->property = 0; //页初始化
         set_page_ref(p, 0);
     }
     base->property = n;
-    SetPageProperty(base);
+    SetPageProperty(base);         //设为空闲块
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    list_add_before(&free_list, &(base->page_link));//插在空闲块链表末尾
 }
-
+//首次适应分配空闲块
 static struct Page *
 default_alloc_pages(size_t n) {
     assert(n > 0);
@@ -127,55 +127,91 @@ default_alloc_pages(size_t n) {
     }
     struct Page *page = NULL;
     list_entry_t *le = &free_list;
-    while ((le = list_next(le)) != &free_list) {
+    while ((le = list_next(le)) != &free_list) {//找到合适的空闲块
         struct Page *p = le2page(le, page_link);
         if (p->property >= n) {
             page = p;
             break;
         }
     }
-    if (page != NULL) {
-        list_del(&(page->page_link));
-        if (page->property > n) {
+    if (page != NULL) {//分配
+        if (page->property > n) {//空闲块比需要的大
             struct Page *p = page + n;
             p->property = page->property - n;
-            list_add(&free_list, &(p->page_link));
-    }
+            list_add_after(&(page->page_link), &(p->page_link));
+            SetPageProperty(p);
+        }
+        list_del(&(page->page_link));
         nr_free -= n;
-        ClearPageProperty(page);
+        ClearPageProperty(page);//设为已占用
     }
     return page;
 }
-
+//base指向待释放的内存块，n为内存块的页数
 static void
 default_free_pages(struct Page *base, size_t n) {
     assert(n > 0);
     struct Page *p = base;
     for (; p != base + n; p ++) {
-        assert(!PageReserved(p) && !PageProperty(p));
+        // assert(!PageReserved(p));
+        // assert(!PageProperty(p));
+        assert(!PageReserved(p) && !PageProperty(p));//非保留页，且被占用
         p->flags = 0;
         set_page_ref(p, 0);
     }
+    SetPageProperty(base);//设为空闲页
     base->property = n;
-    SetPageProperty(base);
-    list_entry_t *le = list_next(&free_list);
-    while (le != &free_list) {
-        p = le2page(le, page_link);
-        le = list_next(le);
-        if (base + base->property == p) {
-            base->property += p->property;
-            ClearPageProperty(p);
-            list_del(&(p->page_link));
-        }
-        else if (p + p->property == base) {
-            p->property += base->property;
-            ClearPageProperty(base);
-            base = p;
-            list_del(&(p->page_link));
-        }
+    list_entry_t *temp = free_list.next;
+    struct Page *first = le2page(free_list.next, page_link);//第一个空闲块
+    struct Page *end = le2page(free_list.prev, page_link);//最后一个空闲块
+    // print_free_list();
+    if(base + n <= first){//插在链头
+        temp = free_list.next;
     }
+    else if(base >= end + end->property){//插在链尾
+        temp = &free_list;
+    }
+    else{//插在链中
+        struct Page *ptemp = le2page(temp, page_link);
+        struct Page *pntemp = le2page(temp->next, page_link);
+        while(temp != &free_list){
+            if(base >= ptemp + ptemp->property && base + n <= pntemp)
+                break;
+            temp = temp->next;
+            ptemp = le2page(temp, page_link);
+            pntemp = le2page(temp->next, page_link);
+        }
+        if(temp == &free_list)
+            panic("default_free_pages: base or n error\n");
+        temp = temp->next;
+    }
+    struct Page *left = le2page(temp->prev, page_link);//插入位置左侧的空闲块
+    struct Page *right = le2page(temp, page_link);//插入位置的空闲块
+    if((temp->prev != &free_list) && (base == left + left->property)){//有左空闲块，且和左空闲块相邻，向左合并
+        ClearPageProperty(base);
+        base = left;
+        list_del(temp->prev);
+        base->property += n;
+    }
+    if((temp != &free_list) && (base + base->property) == right){//有右空闲块，且和右空闲块相邻，向右合并
+        ClearPageProperty(right);
+        list_del(temp);
+        base->property += right->property;
+        temp = temp->next;
+    }
+    list_add_before(temp, &(base->page_link));
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+}
+
+void
+print_free_list(void){//打印空闲块链表
+    list_entry_t *test = free_list.next;
+    while(test != &free_list){
+        int i = 1;
+        struct Page *p = le2page(test, page_link);
+        cprintf("%d is %08x, pages is %d\n", i++, p, p->property);
+        test = test->next;
+    }
 }
 
 static size_t
@@ -190,6 +226,7 @@ basic_check(void) {
     assert((p0 = alloc_page()) != NULL);
     assert((p1 = alloc_page()) != NULL);
     assert((p2 = alloc_page()) != NULL);
+    // cprintf("basic_check: p0, p1, p2 is \n%08x\n%08x\n%08x\n", p0, p1, p2);
 
     assert(p0 != p1 && p0 != p2 && p1 != p2);
     assert(page_ref(p0) == 0 && page_ref(p1) == 0 && page_ref(p2) == 0);
@@ -208,13 +245,20 @@ basic_check(void) {
     assert(alloc_page() == NULL);
 
     free_page(p0);
+    // struct Page *ptemp = le2page(free_list.next, page_link);
+    // cprintf("basic_check: first empty block is %08x, pages is %d\n", ptemp, ptemp->property);
     free_page(p1);
+    // ptemp = le2page(free_list.next, page_link);
+    // cprintf("basic_check: first empty block is %08x, pages is %d\n", ptemp, ptemp->property);
     free_page(p2);
+    // ptemp = le2page(free_list.next, page_link);
+    // cprintf("basic_check: first empty block is %08x, pages is %d\n", ptemp, ptemp->property);
     assert(nr_free == 3);
 
     assert((p0 = alloc_page()) != NULL);
     assert((p1 = alloc_page()) != NULL);
     assert((p2 = alloc_page()) != NULL);
+    // cprintf("basic_check: p0, p1, p2 is %08x\n%08x\n%08x\n", p0, p1, p2);
 
     assert(alloc_page() == NULL);
 
@@ -232,6 +276,7 @@ basic_check(void) {
     free_page(p);
     free_page(p1);
     free_page(p2);
+    cprintf("basic_check success!\n");
 }
 
 // LAB2: below code is used to check the first fit allocation algorithm (your EXERCISE 1) 
@@ -274,12 +319,14 @@ default_check(void) {
     assert(PageProperty(p0) && p0->property == 1);
     assert(PageProperty(p1) && p1->property == 3);
 
-    assert((p0 = alloc_page()) == p2 - 1);
+    p0 = alloc_page();
+
+    assert((p0) == p2 - 1);
     free_page(p0);
     assert((p0 = alloc_pages(2)) == p2 + 1);
 
-    free_pages(p0, 2);
-    free_page(p2);
+    free_pages(p0, 2);//右合并
+    free_page(p2);//左合并+右合并
 
     assert((p0 = alloc_pages(5)) != NULL);
     assert(alloc_page() == NULL);

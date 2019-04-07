@@ -127,7 +127,7 @@ struct segdesc {
 
 #define SEG_NULL                                            \
     (struct segdesc) {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
+//type：段描述符的不同类型；base：段基址；lim：段界限；dpl：特权级
 #define SEG(type, base, lim, dpl)                           \
     (struct segdesc) {                                      \
         ((lim) >> 12) & 0xffff, (base) & 0xffff,            \
