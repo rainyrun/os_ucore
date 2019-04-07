@@ -46,6 +46,15 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+    extern uintptr_t __vectors[];
+    int i;
+    //注：初始for(i = 0; i < 256; i++)，下面的描述更严谨
+    for(i = 0; i < sizeof(idt) / sizeof(struct pseudodesc); i++){//初始化中断描述符
+        //注：本来用的选择子参数是PROT_MODE_CSEG，值与GD_KTEXT相同，dpl参数是0，值与DPL_KERNEL相同
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    }
+    SETGATE(idt[T_SWITCH_TOK], 0, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);//初始化系统调用中断(T_SYSCALL)的中断描述符
+    lidt(&idt_pd);//加载中断描述符表基址到idtr
 }
 
 static const char *
@@ -147,6 +156,10 @@ trap_dispatch(struct trapframe *tf) {
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+        ticks++;
+        if(ticks % TICK_NUM == 0){
+            print_ticks();
+        }
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
