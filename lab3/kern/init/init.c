@@ -11,7 +11,7 @@
 #include <vmm.h>
 #include <ide.h>
 #include <swap.h>
-#include <kmonitor.h>
+// #include <kmonitor.h>
 
 int kern_init(void) __attribute__((noreturn));
 void grade_backtrace(void);
@@ -20,7 +20,7 @@ static void lab1_switch_test(void);
 int
 kern_init(void) {
     extern char edata[], end[];
-    memset(edata, 0, end - edata);
+    memset(edata, 0, end - edata);//bss段清0（bss段存放未初始化的全局变量和静态变量）
 
     cons_init();                // init the console
 
@@ -30,9 +30,7 @@ kern_init(void) {
     print_kerninfo();
 
     grade_backtrace();
-
     pmm_init();                 // init physical memory management
-
     pic_init();                 // init interrupt controller
     idt_init();                 // init interrupt descriptor table
 
