@@ -12,9 +12,9 @@ RR_init(struct run_queue *rq) {
 
 static void
 RR_enqueue(struct run_queue *rq, struct proc_struct *proc) {
-    assert(list_empty(&(proc->run_link)));
-    list_add_before(&(rq->run_list), &(proc->run_link));
-    if (proc->time_slice == 0 || proc->time_slice > rq->max_time_slice) {
+    assert(list_empty(&(proc->run_link)));//进程不在run_list中
+    list_add_before(&(rq->run_list), &(proc->run_link));//添加到run_list末尾
+    if (proc->time_slice == 0 || proc->time_slice > rq->max_time_slice) {//重新设置时间片
         proc->time_slice = rq->max_time_slice;
     }
     proc->rq = rq;
@@ -31,7 +31,7 @@ RR_dequeue(struct run_queue *rq, struct proc_struct *proc) {
 static struct proc_struct *
 RR_pick_next(struct run_queue *rq) {
     list_entry_t *le = list_next(&(rq->run_list));
-    if (le != &(rq->run_list)) {
+    if (le != &(rq->run_list)) {//选出run_list中的第一个proc
         return le2proc(le, run_link);
     }
     return NULL;

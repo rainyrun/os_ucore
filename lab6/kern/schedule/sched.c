@@ -44,13 +44,13 @@ static struct run_queue __rq;
 
 void
 sched_init(void) {
-    list_init(&timer_list);
+    list_init(&timer_list);//按时间片调度的进程队列？
 
-    sched_class = &default_sched_class;
+    sched_class = &default_sched_class;//默认为RR_scheduler
 
-    rq = &__rq;
-    rq->max_time_slice = MAX_TIME_SLICE;
-    sched_class->init(rq);
+    rq = &__rq;//运行队列
+    rq->max_time_slice = MAX_TIME_SLICE;//最大时间片
+    sched_class->init(rq);//初始化，运行队列为空，proc_num = 0
 
     cprintf("sched class: %s\n", sched_class->name);
 }
@@ -88,7 +88,7 @@ schedule(void) {
         if ((next = sched_class_pick_next()) != NULL) {
             sched_class_dequeue(next);
         }
-        if (next == NULL) {
+        if (next == NULL) {//run_list为空
             next = idleproc;
         }
         next->runs ++;
