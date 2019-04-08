@@ -375,6 +375,18 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+  pde_t *pdep = &pgdir[PDX(la)];
+    if (!(*pdep & PTE_P)) {
+        struct Page *page;
+        if (!create || (page = alloc_page()) == NULL) {
+            return NULL;
+        }
+        set_page_ref(page, 1);
+        uintptr_t pa = page2pa(page);
+        memset(KADDR(pa), 0, PGSIZE);
+        *pdep = pa | PTE_U | PTE_W | PTE_P;
+    }
+    return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -420,8 +432,16 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+  if (*ptep & PTE_P) {
+        struct Page *page = pte2page(*ptep);
+        if (page_ref_dec(page) == 0) {
+            free_page(page);
+        }
+        *ptep = 0;
+        tlb_invalidate(pgdir, la);
+  }
 }
-
+//清空start到end之间的线性地址与物理地址的映射
 void
 unmap_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
     assert(start % PGSIZE == 0 && end % PGSIZE == 0);
@@ -439,7 +459,7 @@ unmap_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
         start += PGSIZE;
     } while (start != 0 && start < end);
 }
-
+//释放页表
 void
 exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
     assert(start % PGSIZE == 0 && end % PGSIZE == 0);
@@ -465,13 +485,13 @@ exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
 int
 copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
     assert(start % PGSIZE == 0 && end % PGSIZE == 0);
-    assert(USER_ACCESS(start, end));
+    assert(USER_ACCESS(start, end));//在用户空间
     // copy content by page unit.
     do {
         //call get_pte to find process A's pte according to the addr start
         pte_t *ptep = get_pte(from, start, 0), *nptep;
         if (ptep == NULL) {
-            start = ROUNDDOWN(start + PTSIZE, PTSIZE);
+            start = ROUNDDOWN(start + PTSIZE, PTSIZE);//该pde为0，即start后的PTSIZE的线性地址都未映射
             continue ;
         }
         //call get_pte to find process B's pte according to the addr start. If pte is NULL, just alloc a PT
@@ -499,11 +519,18 @@ copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
          * (1) find src_kvaddr: the kernel virtual address of page
          * (2) find dst_kvaddr: the kernel virtual address of npage
          * (3) memory copy from src_kvaddr to dst_kvaddr, size is PGSIZE
-         * (4) build the map of phy addr of  nage with the linear addr start
+         * (4) build the map of phy addr of  npage with the linear addr start
          */
+        void * src_kvaddr = page2kva(page);//A程序该页的虚拟地址
+        void * dst_kvaddr = page2kva(npage);//B程序该页的虚拟地址
+
+        memcpy(dst_kvaddr, src_kvaddr, PGSIZE);//A页复制到B页
+
+        page_insert(to, npage, start, perm);//B页与线性地址建立映射
+
         assert(ret == 0);
         }
-        start += PGSIZE;
+        start += PGSIZE;//下一页
     } while (start != 0 && start < end);
     return 0;
 }

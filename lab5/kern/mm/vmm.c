@@ -169,7 +169,7 @@ mm_map(struct mm_struct *mm, uintptr_t addr, size_t len, uint32_t vm_flags,
     int ret = -E_INVAL;
 
     struct vma_struct *vma;
-    if ((vma = find_vma(mm, start)) != NULL && end > vma->vm_start) {
+    if ((vma = find_vma(mm, start)) != NULL && end > vma->vm_start) {//虚存空间重复？
         goto out;
     }
     ret = -E_NO_MEM;
@@ -213,14 +213,14 @@ void
 exit_mmap(struct mm_struct *mm) {
     assert(mm != NULL && mm_count(mm) == 0);
     pde_t *pgdir = mm->pgdir;
-    list_entry_t *list = &(mm->mmap_list), *le = list;
+    list_entry_t *list = &(mm->mmap_list), *le = list;//指向vma
     while ((le = list_next(le)) != list) {
         struct vma_struct *vma = le2vma(le, list_link);
-        unmap_range(pgdir, vma->vm_start, vma->vm_end);
+        unmap_range(pgdir, vma->vm_start, vma->vm_end);//释放vma对应的页
     }
     while ((le = list_next(le)) != list) {
         struct vma_struct *vma = le2vma(le, list_link);
-        exit_range(pgdir, vma->vm_start, vma->vm_end);
+        exit_range(pgdir, vma->vm_start, vma->vm_end);//释放vma的页表
     }
 }
 
@@ -493,6 +493,34 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
         }
    }
 #endif
+   if ((ptep = get_pte(mm->pgdir, addr, 1)) == NULL) {
+        cprintf("get_pte in do_pgfault failed\n");
+        goto failed;
+    }
+    
+    if (*ptep == 0) { // if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
+        if (pgdir_alloc_page(mm->pgdir, addr, perm) == NULL) {
+            cprintf("pgdir_alloc_page in do_pgfault failed\n");
+            goto failed;
+        }
+    }
+    else { // if this pte is a swap entry, then load data from disk to a page with phy addr
+           // and call page_insert to map the phy addr with logical addr
+        if(swap_init_ok) {
+            struct Page *page=NULL;
+            if ((ret = swap_in(mm, addr, &page)) != 0) {
+                cprintf("swap_in in do_pgfault failed\n");
+                goto failed;
+            }    
+            page_insert(mm->pgdir, page, addr, perm);
+            swap_map_swappable(mm, addr, page, 1);
+            page->pra_vaddr = addr;
+        }
+        else {
+            cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
+            goto failed;
+        }
+   }
    ret = 0;
 failed:
     return ret;
@@ -500,28 +528,28 @@ failed:
 
 bool
 user_mem_check(struct mm_struct *mm, uintptr_t addr, size_t len, bool write) {
-    if (mm != NULL) {
-        if (!USER_ACCESS(addr, addr + len)) {
+    if (mm != NULL) {//非内核线程，检查地址是否合法
+        if (!USER_ACCESS(addr, addr + len)) {//是否在用户空间[0x00200000, 0xB0000000]
             return 0;
         }
         struct vma_struct *vma;
         uintptr_t start = addr, end = addr + len;
         while (start < end) {
-            if ((vma = find_vma(mm, start)) == NULL || start < vma->vm_start) {
+            if ((vma = find_vma(mm, start)) == NULL || start < vma->vm_start) {//检查地址是否在进程空间内
                 return 0;
             }
-            if (!(vma->vm_flags & ((write) ? VM_WRITE : VM_READ))) {
+            if (!(vma->vm_flags & ((write) ? VM_WRITE : VM_READ))) {//是否有相应读写权限
                 return 0;
             }
-            if (write && (vma->vm_flags & VM_STACK)) {
+            if (write && (vma->vm_flags & VM_STACK)) {//难道vma的栈在vma->start开始的地方吗？
                 if (start < vma->vm_start + PGSIZE) { //check stack start & size
                     return 0;
                 }
             }
             start = vma->vm_end;
         }
-        return 1;
-    }
+        return 1;//通过检查，返回1
+    }//内核线程，检查是否在内核空间
     return KERN_ACCESS(addr, addr + len);
 }
 
