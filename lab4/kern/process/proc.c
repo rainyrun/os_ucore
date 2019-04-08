@@ -102,6 +102,20 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
+      proc->state = PROC_UNINIT;
+      proc->pid = -1;
+      proc->runs = 0;
+      proc->kstack = 0;
+      proc->need_resched = 0;
+      proc->parent = NULL;
+      proc->mm = NULL;
+      //proc->context = 0;
+      memset(&(proc->context), 0, sizeof(struct context));
+      proc->tf = NULL;
+      proc->cr3 = boot_cr3;//是__boot_pgdir的物理地址
+      proc->flags = 0;
+      //proc->name = "uninit";
+      memset(proc->name, 0, PROC_NAME_LEN);
     }
     return proc;
 }
@@ -126,7 +140,7 @@ static int
 get_pid(void) {
     static_assert(MAX_PID > MAX_PROCESS);
     struct proc_struct *proc;
-    list_entry_t *list = &proc_list, *le;
+    list_entry_t *list = &proc_list, *le;//proc_list全局变量，存放了所有进程控制块
     static int next_safe = MAX_PID, last_pid = MAX_PID;
     if (++ last_pid >= MAX_PID) {
         last_pid = 1;
@@ -148,7 +162,7 @@ get_pid(void) {
                     goto repeat;
                 }
             }
-            else if (proc->pid > last_pid && next_safe > proc->pid) {
+            else if (proc->pid > last_pid && next_safe > proc->pid) {//保证next_safe是last_pid后最小的proc->pid。前提：proc_list按pid升序排
                 next_safe = proc->pid;
             }
         }
@@ -163,14 +177,14 @@ proc_run(struct proc_struct *proc) {
     if (proc != current) {
         bool intr_flag;
         struct proc_struct *prev = current, *next = proc;
-        local_intr_save(intr_flag);
+        local_intr_save(intr_flag);//关中断
         {
-            current = proc;
-            load_esp0(next->kstack + KSTACKSIZE);
-            lcr3(next->cr3);
-            switch_to(&(prev->context), &(next->context));
+            current = proc;//current指向即将运行到程序
+            load_esp0(next->kstack + KSTACKSIZE);//切换内核栈
+            lcr3(next->cr3);//加载页表
+            switch_to(&(prev->context), &(next->context));//切换到proc程序
         }
-        local_intr_restore(intr_flag);
+        local_intr_restore(intr_flag);//开中断
     }
 }
 
@@ -252,7 +266,7 @@ copy_thread(struct proc_struct *proc, uintptr_t esp, struct trapframe *tf) {
     *(proc->tf) = *tf;
     proc->tf->tf_regs.reg_eax = 0;
     proc->tf->tf_esp = esp;
-    proc->tf->tf_eflags |= FL_IF;
+    proc->tf->tf_eflags |= FL_IF;//使能中断
 
     proc->context.eip = (uintptr_t)forkret;
     proc->context.esp = (uintptr_t)(proc->tf);
@@ -296,6 +310,55 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     //    5. insert proc_struct into hash_list && proc_list
     //    6. call wakeup_proc to make the new child process RUNNABLE
     //    7. set ret vaule using child proc's pid
+    if((proc = alloc_proc()) == NULL){//分配进程控制块
+      goto fork_out;
+    }
+
+    proc->parent = current;
+
+    if(setup_kstack(proc) != 0){//分配线程栈
+      cprintf("setup_kstack failed.\n");
+      goto bad_fork_cleanup_proc;
+    }
+
+    if(copy_mm(clone_flags, proc) != 0){//复制or共享父进程的内存管理信息
+      cprintf("copy_mm failed.\n");
+      goto bad_fork_cleanup_kstack;
+    }
+
+    copy_thread(proc, stack, tf);//复制上下文context和tf
+
+    bool intr_flag;
+    local_intr_save(intr_flag);{
+    proc->pid = get_pid();//获取进程号
+
+    hash_proc(proc);//插入 hash_list
+
+    list_entry_t *le = &proc_list;
+    struct proc_struct *p = NULL;
+    while((le = list_next(le)) != &proc_list){//在proc_list中寻找合适的插入位置（按pid升序排）
+      p = le2proc(le, list_link);
+      if(proc->pid < p->pid)
+        break;
+    }
+    list_add_before(le, &(proc->list_link));//插入proc_list
+    nr_process ++;
+  }
+    local_intr_restore(intr_flag);
+    
+    // bool intr_flag;
+    // local_intr_save(intr_flag);
+    // {
+    //     proc->pid = get_pid();
+    //     hash_proc(proc);
+    //     list_add(&proc_list, &(proc->list_link));
+    //     nr_process ++;
+    // }
+    // local_intr_restore(intr_flag);
+
+    wakeup_proc(proc);//设置程序状态为可执行
+    ret = proc->pid;//返回新程序的pid
+
 fork_out:
     return ret;
 

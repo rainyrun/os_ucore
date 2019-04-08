@@ -18,12 +18,12 @@ schedule(void) {
     local_intr_save(intr_flag);
     {
         current->need_resched = 0;
-        last = (current == idleproc) ? &proc_list : &(current->list_link);
+        last = (current == idleproc) ? &proc_list : &(current->list_link);//从该进程在proc_list中的下一个开始调度
         le = last;
         do {
             if ((le = list_next(le)) != &proc_list) {
                 next = le2proc(le, list_link);
-                if (next->state == PROC_RUNNABLE) {
+                if (next->state == PROC_RUNNABLE) {//找到proc_list中进程状态为PROC_RUNNABLE的进程
                     break;
                 }
             }
