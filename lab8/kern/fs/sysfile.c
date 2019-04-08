@@ -104,7 +104,7 @@ out:
     return ret;
 }
 
-/* sysfile_write - write file */
+/* sysfile_write - write file VFS层 */
 int
 sysfile_write(int fd, void *base, size_t len) {
     struct mm_struct *mm = current->mm;
