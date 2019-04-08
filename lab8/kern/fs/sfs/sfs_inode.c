@@ -599,6 +599,10 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
      * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
 	*/
+    sfs_bmap_load_nolock
+    sfs_buf_op
+    sfs_block_op
+    
 out:
     *alenp = alen;
     if (offset + alen > sin->din->size) {
@@ -635,7 +639,7 @@ sfs_read(struct inode *node, struct iobuf *iob) {
     return sfs_io(node, iob, 0);
 }
 
-// sfs_write - write file
+// sfs_write - write file SFS层
 static int
 sfs_write(struct inode *node, struct iobuf *iob) {
     return sfs_io(node, iob, 1);
