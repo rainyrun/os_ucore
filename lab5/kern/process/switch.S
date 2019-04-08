@@ -1,10 +1,10 @@
 .text
 .globl switch_to
-switch_to:                      # switch_to(from, to)
+switch_to:                      # switch_to(from, to)调用switch_to时，to，from依次入栈
 
     # save from's registers
-    movl 4(%esp), %eax          # eax points to from
-    popl 0(%eax)                # save eip !popl
+    movl 4(%esp), %eax          # eax points to from, from = prev->context
+    popl 0(%eax)                # save eip !popl(context的第一项是eip)
     movl %esp, 4(%eax)
     movl %ebx, 8(%eax)
     movl %ecx, 12(%eax)

@@ -63,7 +63,7 @@ sys_pgdir(uint32_t arg[]) {
     print_pgdir();
     return 0;
 }
-
+//函数指针数组
 static int (*syscalls[])(uint32_t arg[]) = {
     [SYS_exit]              sys_exit,
     [SYS_fork]              sys_fork,
@@ -82,7 +82,7 @@ void
 syscall(void) {
     struct trapframe *tf = current->tf;
     uint32_t arg[5];
-    int num = tf->tf_regs.reg_eax;
+    int num = tf->tf_regs.reg_eax;//eax存着SYS_exec
     if (num >= 0 && num < NUM_SYSCALLS) {
         if (syscalls[num] != NULL) {
             arg[0] = tf->tf_regs.reg_edx;
