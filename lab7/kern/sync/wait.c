@@ -80,7 +80,7 @@ wait_in_queue(wait_t *wait) {
 void
 wakeup_wait(wait_queue_t *queue, wait_t *wait, uint32_t wakeup_flags, bool del) {
     if (del) {
-        wait_queue_del(queue, wait);
+        wait_queue_del(queue, wait);//从等待队列中删除
     }
     wait->wakeup_flags = wakeup_flags;
     wakeup_proc(wait->proc);

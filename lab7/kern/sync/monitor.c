@@ -37,6 +37,13 @@ cond_signal (condvar_t *cvp) {
    *          }
    *       }
    */
+  if(cvp->count > 0){//有因条件cvp而等待的进程
+    up(&(cvp->sem));//唤醒cvp等待队列中的第一个proc
+    cvp->owner->next_count++;//把当前进程放入next队列中
+    down(&(cvp->owner->next));
+
+    cvp->owner->next_count--;//当前进程被唤醒
+   }
    cprintf("cond_signal end: cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }
 
@@ -55,5 +62,15 @@ cond_wait (condvar_t *cvp) {
     *         wait(cv.sem);
     *         cv.count --;
     */
+    cvp->count++;
+    if(cvp->owner->next_count > 0){//若管程中有被阻塞的进程
+      up(&(cvp->owner->next));//唤醒
+    }
+    else{
+      up(&(cvp->owner->mutex));//没有，则管程可用
+    }
+    down(&(cvp->sem));//当前进程放入cvp的等待队列中
+
+    cvp->count--;//被唤醒
     cprintf("cond_wait end:  cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }
