@@ -119,6 +119,26 @@ alloc_proc(void) {
      *     uint32_t lab6_stride;                       // FOR LAB6 ONLY: the current stride of the process
      *     uint32_t lab6_priority;                     // FOR LAB6 ONLY: the priority of process, set by lab6_set_priority(uint32_t)
      */
+      proc->state = PROC_UNINIT;
+      proc->pid = -1;
+      proc->runs = 0;
+      proc->kstack = 0;
+      proc->need_resched = 0;
+      proc->parent = NULL;
+      proc->mm = NULL;
+      memset(&(proc->context), 0, sizeof(struct context));
+      proc->tf = NULL;
+      proc->cr3 = boot_cr3;//是__boot_pgdir的物理地址
+      proc->flags = 0;
+      memset(proc->name, 0, PROC_NAME_LEN);
+      proc->wait_state = 0;
+      proc->cptr = proc->yptr = proc->optr = NULL;
+      proc->rq = NULL;
+      list_init(&(proc->run_link));
+      proc->time_slice = 0;
+      skew_heap_init(&(proc->lab6_run_pool));
+      proc->lab6_stride = 0;
+      proc->lab6_priority = 0;
     }
     return proc;
 }
@@ -413,7 +433,38 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 	*    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
 	*    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
-	
+	  if((proc = alloc_proc()) == NULL){//分配进程控制块
+      goto fork_out;
+    }
+
+    proc->parent = current;
+    if(current->wait_state != 0)
+        goto fork_out;
+
+    if(setup_kstack(proc) != 0){//分配线程栈
+      cprintf("setup_kstack failed.\n");
+      goto bad_fork_cleanup_proc;
+    }
+
+    if(copy_mm(clone_flags, proc) != 0){//复制or共享父进程的内存管理信息
+      cprintf("copy_mm failed.\n");
+      goto bad_fork_cleanup_kstack;
+    }
+
+    copy_thread(proc, stack, tf);//复制上下文context和tf
+
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        proc->pid = get_pid();//获取进程号
+        hash_proc(proc);//插入 hash_list
+        set_links(proc);//加入proc_list，设置proc的关系链
+    }
+    local_intr_restore(intr_flag);
+
+    wakeup_proc(proc);//设置程序状态为可执行
+    ret = proc->pid;//返回新程序的pid
+
 fork_out:
     return ret;
 
@@ -612,6 +663,12 @@ load_icode(unsigned char *binary, size_t size) {
      *          tf_eip should be the entry point of this binary program (elf->e_entry)
      *          tf_eflags should be set to enable computer to produce Interrupt
      */
+    tf->tf_cs = USER_CS;
+    tf->tf_ds = tf->tf_es = tf->tf_ss = USER_DS;
+    tf->tf_esp = USTACKTOP;
+    tf->tf_eip = elf->e_entry;//程序入口
+    tf->tf_eflags = FL_IF;//使能中断
+    
     ret = 0;
 out:
     return ret;
