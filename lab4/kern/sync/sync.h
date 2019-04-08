@@ -7,17 +7,17 @@
 
 static inline bool
 __intr_save(void) {
-    if (read_eflags() & FL_IF) {
-        intr_disable();
+    if (read_eflags() & FL_IF) {//要求关中断
+        intr_disable();//关中断
         return 1;
     }
     return 0;
 }
 
 static inline void
-__intr_restore(bool flag) {
+__intr_restore(bool flag) {//已关中断，开中断
     if (flag) {
-        intr_enable();
+        intr_enable();//开中断
     }
 }
 
