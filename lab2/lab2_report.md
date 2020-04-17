@@ -1,13 +1,20 @@
-lab2实验报告
-练习1:实现 first-fit 连续物理内存分配算法
+# lab2实验报告
+
+## 练习1:实现 first-fit 连续物理内存分配算法
+
 一、需求分析
+
 1.需要探测物理内存的分布，将连续的页组织成空闲内存块，再把空闲内存块组成链表，以物理地址递增的顺序排列。
 2.分配内存。给出需要空闲内存的大小（以页数表示），从空闲块链表中，选出第一个符合要求的空闲块，并分配。
 3.回收内存。给出需回收的内存起始地址和大小，将该内存置为空闲后，在空闲块链表中找到合适的位置插入。前后空闲块若相邻，则需要合并。
 4.程序执行的命令为：1）探测内存。2）建空闲块链表。3）分配。4）回收
 5.测试数据：
+
 二、概要设计
-1.设定空闲块链表的抽象数据类型定义：
+
+1. 设定空闲块链表的抽象数据类型定义：
+
+```
 ADT free_area_t{
 	数据对象：空闲块
 	数据关系：以起始物理地址递增的顺序排列
@@ -16,7 +23,11 @@ ADT free_area_t{
 		初始条件：已探测到的内存分布情况
 		操作结果：形成空闲块链表
 }
-2.设定物理内存管理的抽象数据类型定义：
+```
+
+2. 设定物理内存管理的抽象数据类型定义：
+
+```
 ADT pmm{
 	init()
 		初始条件：空
@@ -31,8 +42,13 @@ ADT pmm{
 		初始条件：base指向待回收的内存块，n为内存块的页数
 		操作结果：将base指向的内存块回收到空闲块链表中
 }
+```
+
 三、详细设计
+
 1.页类型、空闲块链表、双向链表
+
+```
 //页结构
 //位置：lab2/kern/mm/memlayout.h
 struct Page {
@@ -112,8 +128,11 @@ page_init(void) {
         }
     }
 }
+```
 
 2.物理内存管理器结构
+
+```
 //物理内存管理器（通用，与c++中的抽象类概念类似）
 //位置：lab2/kern/mm/pmm.h
 struct pmm_manager {
@@ -207,11 +226,15 @@ default_free_pages(struct Page *base, size_t n) {
     list_add_before(temp, &(base->page_link));
     nr_free += n;
 }
+```
 
 注：如非特殊说明，输入输出内的地址都是指虚拟地址
 
 准备内容：
+
 1.探测物理内存，检测空闲页，得到空闲内存的起始地址和结束地址
+
+```
 数据
 //保存探测到的内存布局。
 //位置：lab2/kern/mm/memlayout.h
@@ -223,9 +246,12 @@ struct e820map {
         uint32_t type;	//类型
     } __attribute__((packed)) map[E820MAX];	//上限为E820MAX个
 };
+```
 
 功能
 位置：lab2/boot/bootasm.S
+
+```
 probe_memory:
     movl $0, 0x8000			;内存0x8000位置清0。(e820map的变量存放在0x8000处，即，nr_map = 0)
     xorl %ebx, %ebx			;ebx置0
@@ -244,13 +270,15 @@ cont:
     cmpl $0, %ebx 			;ebx为0，探测结束
     jnz start_probe
 finish_probe:
+```
 
-
-练习2
+## 练习2
 
 2.根据线性地址la，找到对应的物理地址pa
+
 一、需求分析
-//1.程序存储在磁盘上，有对应的虚拟地址va。将程序按页装入内存，需要建立页表。虚拟地址va通过段表映射到线性地址la，线性地址la通过页表映射到物理地址pa。
+
+1.程序存储在磁盘上，有对应的虚拟地址va。将程序按页装入内存，需要建立页表。虚拟地址va通过段表映射到线性地址la，线性地址la通过页表映射到物理地址pa。
 2.虚拟地址pa、线性地址la、物理地址的最终映射关系为：va = la = pa + 0xC0000000
 3.在初次为程序设置页表时，需要为页目录表分配空间。
 4.页目录项前20位为页框号，可找到一级页表；后12为页偏移，可找到页表中的页表项。页表项前20为页框号，可找到la所在到页；后12位为页偏移，可找到la对应的pa
@@ -258,7 +286,10 @@ finish_probe:
 6.测试：
 
 二、概要设计
+
 1.页表抽象数据类型的定义：
+
+```
 ADT pgdir{
 	数据对象：页
 	数据关系：索引结构
@@ -279,8 +310,10 @@ ADT pgdir{
 		初始条件：(pgdir, la, size, pa, perm)
 		操作结果：建立页表。la和pa的映射关系为：la = pa + 0xC0000000。
 }
-
+```
 三、详细设计
+
+```
 /*
 get_pte	(pgdir, la, creat)
 	初始条件：无
@@ -302,23 +335,37 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];//PDE_ADDR(*pdep) = pa
 }
+```
 
 问：请描述页目录项(Page Directory Entry)和页表项(Page Table Entry)中每个组成部分的含义以及对ucore而言的潜在用处。
-答：页目录项内容pde = (页表起始物理地址 & ~0x0FFF) | PTE_U | PTE_W | PTE_P
-   页表项内容pte = (pa & ~0x0FFF) | PTE_P | PTE_W
+
+答：
+页目录项内容pde = (页表起始物理地址 & ~0x0FFF) | PTE_U | PTE_W | PTE_P
+
+页表项内容pte = (pa & ~0x0FFF) | PTE_P | PTE_W
+
 其中:
+
 PTE_U：位3，表示用户态的软件可以读取对应地址的物理内存页内容
+
 PTE_W：位2，表示物理内存页内容可写
+
 PTE_P：位1，表示物理内存页存在
+
 给出la，PDX(la)为对应的pde，pde前20位+PTX(la)找到对应的pte，PTE_ADDR(pte)+offset(la)找到pa
+
 属性位（后三位）可以控制访问权限，如，避免对只读页进行页操作。
 
 问：如果ucore执行过程中访问内存，出现了页访问异常，请问硬件要做哪些事情?
+
 答：页访问异常分为缺页、权限不足。
-	缺页：为程序分配页，将缺失的内容，从磁盘读入该页，并在页表中建立映射（调用page_insert函数）。若页不足，则启动换入换出机制。
+
+缺页：为程序分配页，将缺失的内容，从磁盘读入该页，并在页表中建立映射（调用page_insert函数）。若页不足，则启动换入换出机制。
 	权限不足：报错。
 
-练习3
+## 练习3
+
+```
 /*
 page_remove_pte(pgdir, la, ptep)
 		初始条件：pgdir，pte存在
@@ -336,15 +383,19 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
         tlb_invalidate(pgdir, la);//清除tlb缓存
     }
 }
+```
 
 问：数据结构Page的全局变量(其实是一个数组)的每一项与页表中的页目录项和页表项有无对应关系?如果有，其对应关系是啥?
+
 答：页目录项(or页表项) & (~0xfff)得到的地址是某页的起始地址，该页属于Page中的某一项。
 
 问：如果希望虚拟地址与物理地址相等，则需要如何修改lab2，完成此事?鼓励通过编程来具体完成这个问题
+
 答：将pmm_init中的boot_map_segment函数，参数改为(boot_pgdir, 0, KMEMSIZE, 0, PTE_W)。段映射从最初就是对等映射即可。
 
 
 问：将pte的PTE_P位置为0，和清除pte的区别？
+
 答：将pte的PTE_P位置为0，则pte的其他位还可以表示对应的la在磁盘中的位置，映射关系没有改变。而清除pte则将映射关系清除了。
 
 问：需要限制能使用的虚拟地址范围？意义何在？物理地址和虚拟地址可以以任意关系映射啊
@@ -354,6 +405,7 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 
 疑问解答
 问：boot_pgdir指向哪里？
+
 答：boot_pgdir是ucore操作系统的页表。pde_t *boot_pgdir = &__boot_pgdir; __boot_pgdir在entry.S中，已分配好内存空间。
 
 问：实验指导里的enable_paging，enable_page函数在哪？
@@ -361,7 +413,10 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 问：pgdir在程序最开始的时候，就有分配内存吗？在哪里实现该功能？
 
 附录
+
 函数功能说明
+
+```
 PGOFF(la)
 	取得线性地址la里的偏移量off
 get_page(pgdir, la, ptep_store)
@@ -378,3 +433,4 @@ boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, uintptr_t pa, uint32_t
 	进行地址映射，[la, la + size] <--> [pa, pa + size]
 SEG(type, base, lim, dpl)
 	设置段选择子。type：段描述符的不同类型；base：段基址；lim：段界限；dpl：特权级
+```
